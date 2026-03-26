@@ -64,18 +64,18 @@ function write(text){
 }
 
 async function main(){
-    write("⏳ Loading Pyodide...");
+    write("> Loading Pyodide...");
     let pyodide = await loadPyodide();
-    write("✅ Pyodide loaded!");
+    write("> Pyodide loaded!");
     await pyodide.loadPackage("numpy");
-    write("✅ Numpy ready!");
+    write("> Numpy ready!");
 
-    write("⏳ Downloading NasoroCLI model from ManusCDN...");
+    write("> Downloading NasoroCLI model from ManusCDN...");
     let response = await fetch("https://files.manuscdn.com/user_upload_by_module/session_file/310519663325278737/WaQYJiJGWkdtjUiX.onnx");
     let buffer = await response.arrayBuffer();
-    write("⏳ Initializing ONNX Runtime...");
+    write("> Initializing ONNX Runtime...");
     let session = await ort.InferenceSession.create(new Uint8Array(buffer));
-    write("✅ NasoroCLI model loaded!");
+    write("> NasoroCLI model loaded!");
 
     function tokenize(text){
         let arr = new Float32Array(128).fill(0);
