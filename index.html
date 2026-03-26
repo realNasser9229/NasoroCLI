@@ -7,7 +7,6 @@
 <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <style>
-  /* Termux-style terminal */
   body {
     background: #000;
     color: #0f0;
@@ -55,6 +54,9 @@
 <script>
 let terminal = document.getElementById("terminal");
 let input = document.getElementById("input");
+let history = [];
+let historyIndex = -1;
+let conversation = []; // multi-turn memory
 
 function write(text){
     terminal.innerHTML += text + "\n";
@@ -86,11 +88,33 @@ async function main(){
     }
 
     input.addEventListener("keydown", async (e)=>{
+        if(e.key === "ArrowUp"){
+            if(history.length > 0){
+                historyIndex = Math.max(0, historyIndex-1);
+                input.value = history[historyIndex];
+            }
+            e.preventDefault();
+            return;
+        }
+        if(e.key === "ArrowDown"){
+            if(history.length > 0){
+                historyIndex = Math.min(history.length-1, historyIndex+1);
+                input.value = history[historyIndex];
+            }
+            e.preventDefault();
+            return;
+        }
         if(e.key === "Enter"){
-            let cmd = input.value;
+            let cmd = input.value.trim();
+            if(!cmd) return;
             input.value = "";
             write("> " + cmd);
+            history.push(cmd);
+            historyIndex = history.length;
             if(cmd.toLowerCase() === "exit"){ write("👋 Bye!"); return; }
+
+            // Add to multi-turn memory
+            conversation.push("> " + cmd);
 
             try{
                 let tensor = tokenize(cmd);
@@ -98,6 +122,9 @@ async function main(){
                 feeds[session.inputNames[0]] = tensor;
                 let results = await session.run(feeds);
                 let response = detokenize(results[session.outputNames[0]]);
+
+                // Add AI response to conversation
+                conversation.push("NasoroCLI> " + response);
                 write("NasoroCLI> " + response);
             } catch(err){
                 write("❌ Error: " + err);
@@ -110,4 +137,4 @@ main();
 </script>
 
 </body>
-</html>
+</html>    
