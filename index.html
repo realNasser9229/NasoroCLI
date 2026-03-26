@@ -35,7 +35,7 @@ async function main(){
 
     write("⏳ Loading ONNX model...");
     // RELATIVE PATH: assumes nasoro_cli.onnx is in the same repo/folder as index.html
-    let session = await ort.InferenceSession.create("nasoro_cli.onnx");
+    let session = await ort.InferenceSession.create("NasoroCLI-150M-Medium.onnx");
     write("✅ NasoroCLI model loaded!");
 
     function tokenize(text){
