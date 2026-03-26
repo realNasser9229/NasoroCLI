@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>NasoroCLI</title>
+<script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
+<style>
+  body { background: #121212; color: #fff; font-family: monospace; padding: 20px; }
+  #terminal { width: 100%; height: 400px; overflow-y: auto; border: 1px solid #555; padding: 10px; background: #1e1e1e; }
+  #input { width: 100%; padding: 10px; background: #222; border: none; color: #fff; }
+</style>
+</head>
+<body>
+
+<h2>NasoroCLI</h2>
+<div id="terminal"></div>
+<input id="input" placeholder="Type command..." autofocus>
+
+<script>
+let terminal = document.getElementById("terminal");
+let input = document.getElementById("input");
+
+function write(text){
+    terminal.innerHTML += text + "<br>";
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+async function main(){
+    write("⏳ Loading Pyodide...");
+    let pyodide = await loadPyodide();
+    write("✅ Pyodide loaded!");
+    await pyodide.loadPackage("numpy");
+    write("✅ Numpy ready!");
+
+    write("⏳ Loading ONNX model...");
+    // RELATIVE PATH: assumes nasoro_cli.onnx is in the same repo/folder as index.html
+    let session = await ort.InferenceSession.create("nasoro_cli.onnx");
+    write("✅ NasoroCLI model loaded!");
+
+    function tokenize(text){
+        let arr = new Float32Array(128).fill(0);
+        for(let i=0;i<text.length && i<128;i++){ arr[i] = text.charCodeAt(i) % 256; }
+        return new ort.Tensor("float32", arr, [1,128]);
+    }
+
+    function detokenize(tensor){
+        return Array.from(tensor.data).map(x=>String.fromCharCode(x%256)).join("");
+    }
+
+    input.addEventListener("keydown", async (e)=>{
+        if(e.key === "Enter"){
+            let cmd = input.value;
+            input.value = "";
+            write("> " + cmd);
+            if(cmd.toLowerCase() === "exit"){ write("👋 Bye!"); return; }
+
+            try{
+                let tensor = tokenize(cmd);
+                let feeds = {};
+                feeds[session.inputNames[0]] = tensor;
+                let results = await session.run(feeds);
+                let response = detokenize(results[session.outputNames[0]]);
+                write("NasoroCLI> " + response);
+            } catch(err){
+                write("❌ Error: " + err);
+            }
+        }
+    });
+}
+
+main();
+</script>
+
+</body>
+</html>
