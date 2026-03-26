@@ -2,18 +2,53 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NasoroCLI</title>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
 <style>
-  body { background: #121212; color: #fff; font-family: monospace; padding: 20px; }
-  #terminal { width: 100%; height: 400px; overflow-y: auto; border: 1px solid #555; padding: 10px; background: #1e1e1e; }
-  #input { width: 100%; padding: 10px; background: #222; border: none; color: #fff; }
+  /* Termux-style terminal */
+  body {
+    background: #000;
+    color: #0f0;
+    font-family: "Courier New", monospace;
+    padding: 0;
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  #terminal {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    white-space: pre-wrap;
+    line-height: 1.2em;
+    font-size: 16px;
+  }
+
+  #input {
+    width: 100%;
+    padding: 10px;
+    border: none;
+    outline: none;
+    background: #000;
+    color: #0f0;
+    font-family: monospace;
+    font-size: 16px;
+  }
+
+  #terminal::-webkit-scrollbar {
+    width: 8px;
+  }
+  #terminal::-webkit-scrollbar-thumb {
+    background: #0f0;
+  }
 </style>
 </head>
 <body>
 
-<h2>NasoroCLI</h2>
 <div id="terminal"></div>
 <input id="input" placeholder="Type command..." autofocus>
 
@@ -22,7 +57,7 @@ let terminal = document.getElementById("terminal");
 let input = document.getElementById("input");
 
 function write(text){
-    terminal.innerHTML += text + "<br>";
+    terminal.innerHTML += text + "\n";
     terminal.scrollTop = terminal.scrollHeight;
 }
 
@@ -33,9 +68,11 @@ async function main(){
     await pyodide.loadPackage("numpy");
     write("✅ Numpy ready!");
 
-    write("⏳ Loading ONNX model...");
-    // RELATIVE PATH: assumes nasoro_cli.onnx is in the same repo/folder as index.html
-    let session = await ort.InferenceSession.create("NasoroCLI-150M-Medium.onnx");
+    write("⏳ Downloading NasoroCLI model from ManusCDN...");
+    let response = await fetch("https://files.manuscdn.com/user_upload_by_module/session_file/310519663325278737/WaQYJiJGWkdtjUiX.onnx");
+    let buffer = await response.arrayBuffer();
+    write("⏳ Initializing ONNX Runtime...");
+    let session = await ort.InferenceSession.create(new Uint8Array(buffer));
     write("✅ NasoroCLI model loaded!");
 
     function tokenize(text){
